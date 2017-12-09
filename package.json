@@ -6,8 +6,8 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "dev": "nodemon src/main.js --exec babel-node --presets es2015,stage-2",
-    "compile": "babel --presets es2015,stage-2 src --out-dir dist/",
-    "start": "nodejs src/main.js"
+    "compile": "babel --presets es2015,stage-2 ./src/ --out-dir dist/",
+    "start": "nodejs dist/main.js"
   },
   "repository": {
     "type": "git",

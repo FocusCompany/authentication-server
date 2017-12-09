@@ -1,4 +1,4 @@
-import db_session from "./database";
+// import db_session from "./database";
 import express from "express";
 
 const app = express();
@@ -12,9 +12,9 @@ app.post('/signup', (req, res) => {
 
 
 
-db_session.query('SELECT 1 + 1 AS solution', function (error, results, fields) {
+/*db_session.query('SELECT 1 + 1 AS solution', function (error, results, fields) {
     if (error) throw error;
     console.log('The solution is: ', results[0].solution);
-});
+});*/
 
-db_session.end();
+// db_session.end();

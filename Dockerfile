@@ -1,12 +1,22 @@
 FROM node:9
 
-## ~= cd /app
 WORKDIR /app
 
-## When running `docker build`, this moves the files from
-## the passed context to /app
-COPY src/ package-lock.json package.json ./
+## INSTALL DEPENDENCIES
+# doing this in a separate manner allows npm deps caching
+COPY package.json package-lock.json ./
 
-RUN npm install --production
+# TODO: should be : RUN npm install --production
+RUN npm install
 
-CMD ["npm", "start", "run"]
+
+## COMPILE
+# Copy local src/ to  docker src/
+COPY ./src ./src
+
+RUN mkdir dist/ && npm run compile
+
+EXPOSE 3000
+
+## RUN
+CMD ["npm", "run", "start"]

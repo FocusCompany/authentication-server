@@ -1,4 +1,5 @@
 import mysql from 'mysql';
+/*
 
 const db_session = mysql.createConnection({
     host     : 'localhost',
@@ -9,3 +10,4 @@ const db_session = mysql.createConnection({
 db_session.connect();
 
 export default db_session;
+*/

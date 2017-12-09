@@ -1,11 +1,13 @@
 {
   "name": "authentication-server",
   "version": "1.0.0",
-  "description": "",
+  "description": "Focus authentication server",
   "main": "src/main.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "dev": "nodemon src/main.js"
+    "dev": "nodemon src/main.js --exec babel-node --presets es2015,stage-2",
+    "compile": "babel --presets es2015,stage-2 src --out-dir dist/",
+    "start": "nodejs src/main.js"
   },
   "repository": {
     "type": "git",
@@ -18,9 +20,14 @@
   },
   "homepage": "https://github.com/FocusCompany/authentication-server#readme",
   "dependencies": {
-    "express": "^4.16.2"
+    "express": "^4.16.2",
+    "mysql": "^2.15.0"
   },
   "devDependencies": {
+    "babel-cli": "^6.26.0",
+    "babel-preset-es2015": "^6.24.1",
+    "babel-preset-stage-2": "^6.24.1",
+    "mocha": "^4.0.1",
     "nodemon": "^1.12.5"
   }
 }

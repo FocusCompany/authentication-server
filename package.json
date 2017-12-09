@@ -4,7 +4,7 @@
   "description": "Focus authentication server",
   "main": "src/main.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
+    "test": "mocha",
     "dev": "nodemon src/main.js --exec babel-node --presets es2015,stage-2",
     "compile": "babel --presets es2015,stage-2 ./src/ --out-dir dist/",
     "start": "nodejs dist/main.js"

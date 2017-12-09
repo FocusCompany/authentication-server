@@ -1,24 +1,26 @@
 {
   "name": "authentication-server",
   "version": "1.0.0",
-  "description": "The authentication server for Focus",
-  "main": "main.js",
+  "description": "",
+  "main": "src/main.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "dev": "nodemon src/main.js"
   },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/FocusCompany/authentication-server.git"
   },
-  "keywords": [
-    "focus",
-    "productivity",
-    "authentication"
-  ],
   "author": "Enzo AGUADO",
-  "license": "MIT",
+  "license": "ISC",
   "bugs": {
     "url": "https://github.com/FocusCompany/authentication-server/issues"
   },
-  "homepage": "https://github.com/FocusCompany/authentication-server#readme"
+  "homepage": "https://github.com/FocusCompany/authentication-server#readme",
+  "dependencies": {
+    "express": "^4.16.2"
+  },
+  "devDependencies": {
+    "nodemon": "^1.12.5"
+  }
 }

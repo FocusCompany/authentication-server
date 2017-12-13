@@ -13,15 +13,21 @@
     "type": "git",
     "url": "git+https://github.com/FocusCompany/authentication-server.git"
   },
-  "author": "Enzo AGUADO",
+  "author": "Etienne PASTEUR",
   "license": "ISC",
   "bugs": {
     "url": "https://github.com/FocusCompany/authentication-server/issues"
   },
   "homepage": "https://github.com/FocusCompany/authentication-server#readme",
   "dependencies": {
+    "body-parser": "^1.18.2",
     "express": "^4.16.2",
-    "mysql": "^2.15.0"
+    "jsonwebtoken": "^8.1.0",
+    "mysql": "^2.15.0",
+    "passport": "^0.4.0",
+    "passport-jwt": "^3.0.1",
+    "underscore": "^1.8.3",
+    "uuid": "^3.1.0"
   },
   "devDependencies": {
     "babel-cli": "^6.26.0",

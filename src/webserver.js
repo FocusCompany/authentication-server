@@ -7,23 +7,29 @@ import passport from "passport";
 import passportJWT from "passport-jwt";
 import uuidv4 from "uuid/v4";
 import crypto from "crypto";
+import fs from "fs";
 
-const expiration_jwt_delay = 5; // Number of minutes before the expiration of the JWT token
-
+// Configure JWT token options
+const exp_jwt_delay = 5; // Number of minutes before the expiration of the JWT token
+const privateKey = fs.readFileSync('keys/rsa');
 const ExtractJwt = passportJWT.ExtractJwt;
 const JwtStrategy = passportJWT.Strategy;
+const jwtOptions = {
+    jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
+    secretOrKey: fs.readFileSync('keys/rsa.pem')
+};
+const options = {
+    algorithm: 'RS256'
+};
 
-const jwtOptions = {};
-jwtOptions.jwtFromRequest = ExtractJwt.fromAuthHeaderAsBearerToken();
-jwtOptions.secretOrKey = 'superSecret'; // TODO: Move from secret to Key ?
-
-// Check if the token is in our database
+// JWT Custom Strategy
+// Check if the token is in our database, if false, return Unauthorized. If true, call the next middleware
 const strategy = new JwtStrategy(jwtOptions, function (jwt_payload, next) {
     db_session.query('SELECT * FROM jwt_tokens WHERE uuid = ?', [jwt_payload.uuid], function (error, results, fields) {
         if (error) {
             next(null, false);
         } else {
-            const user = results[_.findIndex(results, {token: jwt.sign(jwt_payload, jwtOptions.secretOrKey)})];
+            const user = results[_.findIndex(results, {token: jwt.sign(jwt_payload, privateKey, options)})];
             if (user) {
                 next(null, user);
             } else {
@@ -32,16 +38,16 @@ const strategy = new JwtStrategy(jwtOptions, function (jwt_payload, next) {
         }
     });
 });
-
 passport.use(strategy);
 
+// Configure and launching Web Server
 const app = express();
-app.listen(3000);
 app.use(passport.initialize());
-app.use(bodyParser.urlencoded({
-    extended: true
-}));
+app.use(bodyParser.urlencoded({extended: true}));
 app.use(bodyParser.json());
+const server = app.listen(3000, function () {
+    console.log("Web server is running on port 3000");
+});
 
 // Register method
 // Take first_name, last_name, email and password in entry.
@@ -94,9 +100,9 @@ app.post("/login", function (req, res) {
                 } else if (user.password === password_hash) {
                     const payload = {
                         uuid: user.uuid,
-                        expiration: (Math.floor(new Date() / 1000) + (expiration_jwt_delay * 60))
+                        exp: (Math.floor(new Date() / 1000) + (exp_jwt_delay * 60))
                     };
-                    const token = jwt.sign(payload, jwtOptions.secretOrKey);
+                    const token = jwt.sign(payload, privateKey, options);
                     db_session.query('INSERT INTO jwt_tokens SET ?', {uuid: user.uuid, token: token}, function (error, results, fields) {
                         if (error) {
                             res.sendStatus(500);
@@ -114,12 +120,14 @@ app.post("/login", function (req, res) {
     }
 });
 
-
 // Renew_jwt method
 // Create a new JWT token and replace the old one in database
 app.get("/renew_jwt", passport.authenticate('jwt', {session: false}), function (req, res) {
-    const payload = {uuid: req.user.uuid, expiration: (Math.floor(new Date() / 1000) + (expiration_jwt_delay * 60))};
-    const token = jwt.sign(payload, jwtOptions.secretOrKey);
+    const payload = {
+        uuid: req.user.uuid,
+        exp: (Math.floor(new Date() / 1000) + (exp_jwt_delay * 60))
+    };
+    const token = jwt.sign(payload, privateKey, options);
     db_session.query('UPDATE jwt_tokens SET token = ? WHERE token = ?', [token, req.user.token], function (error, results, fields) {
         if (error) {
             res.sendStatus(500);
@@ -143,6 +151,7 @@ app.delete("/delete_jwt", passport.authenticate('jwt', {session: false}), functi
 
 // Delete_jwt method
 // Remove user and his jwt tokens
+// TODO: Ask for password in params
 app.delete("/delete_user", passport.authenticate('jwt', {session: false}), function (req, res) {
     db_session.query('DELETE FROM jwt_tokens WHERE uuid = ?', [req.user.uuid], function (error, results, fields) {
         if (error) {
@@ -152,13 +161,16 @@ app.delete("/delete_user", passport.authenticate('jwt', {session: false}), funct
                 if (error) {
                     res.sendStatus(500);
                 } else {
-                    res.json({message: "Success user and his jwt have been deleted"});
+                    res.json({message: "Success user and his jwt tokens have been deleted"});
                 }
             });
         }
     });
 });
 
+// Update_user method
+// Update user information using the parameters inside of the body of the request
+// TODO: Ask for password in params
 app.put("/update_user", passport.authenticate('jwt', {session: false}), function (req, res) {
     db_session.query('SELECT * FROM users WHERE uuid = ?', [req.user.uuid], function (error, results, fields) {
         if (error) {
@@ -187,5 +199,20 @@ app.put("/update_user", passport.authenticate('jwt', {session: false}), function
     });
 });
 
+// This function is called when the server received a SIGTERM or SIGINT to die gracefully
+const gracefulShutdown = function () {
+    db_session.end();
+    server.close(function () {
+        console.log("Shutting down database connection and web server.");
+        process.exit()
+    });
 
-// TODO: Graceful shutdown (express + db)
+    setTimeout(function () {
+        console.error("Could not close connections in time, forcefully shutting down");
+        process.exit()
+    }, 10000);
+};
+
+// Catch SIGTERM and SIGINT signal and call gracefulShutdown function
+process.on('SIGTERM', gracefulShutdown);
+process.on('SIGINT', gracefulShutdown);

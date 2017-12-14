@@ -2,12 +2,12 @@
   "name": "authentication-server",
   "version": "1.0.0",
   "description": "Focus authentication server",
-  "main": "src/main.js",
+  "main": "src/webserver.js",
   "scripts": {
     "test": "mocha",
-    "dev": "nodemon src/main.js --exec babel-node --presets es2015,stage-2",
+    "dev": "nodemon src/webserver.js --exec babel-node --presets es2015,stage-2",
     "compile": "babel --presets es2015,stage-2 ./src/ --out-dir dist/",
-    "start": "nodejs dist/main.js"
+    "start": "nodejs dist/webserver.js"
   },
   "repository": {
     "type": "git",

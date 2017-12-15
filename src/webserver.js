@@ -31,6 +31,7 @@ const strategy = new JwtStrategy(jwtOptions, function (jwt_payload, next) {
         } else {
             const user = results[_.findIndex(results, {token: jwt.sign(jwt_payload, privateKey, options)})];
             if (user) {
+                user.decoded_jwt = jwt_payload;
                 next(null, user);
             } else {
                 next(null, false);
@@ -89,11 +90,11 @@ app.post('/register', (req, res) => {
 // Take user email and password in entry and return a JWT token if the email and password match and store it in database
 app.post("/login", function (req, res) {
     if (req.body.email && req.body.password) {
-        db_session.query('SELECT * FROM users', function (error, results, fields) {
+        db_session.query('SELECT * FROM users WHERE email = ?', req.body.email, function (error, results, fields) {
             if (error) {
                 res.sendStatus(500);
             } else {
-                const user = results[_.findIndex(results, {email: req.body.email})];
+                const user = results[0];
                 const password_hash = crypto.createHash('sha256').update(req.body.password).digest('hex');
                 if (!user) {
                     res.status(401).json({message: "User not found"});
@@ -122,17 +123,21 @@ app.post("/login", function (req, res) {
 
 // Renew_jwt method
 // Create a new JWT token and replace the old one in database
-app.get("/renew_jwt", passport.authenticate('jwt', {session: false}), function (req, res) {
+app.post("/renew_jwt", function (req, res) {
     const payload = {
-        uuid: req.user.uuid,
+        uuid: JSON.parse(Buffer.from(req.body.token.split('.')[1], 'base64')).uuid,
         exp: (Math.floor(new Date() / 1000) + (exp_jwt_delay * 60))
     };
     const token = jwt.sign(payload, privateKey, options);
-    db_session.query('UPDATE jwt_tokens SET token = ? WHERE token = ?', [token, req.user.token], function (error, results, fields) {
+    db_session.query('UPDATE jwt_tokens SET token = ? WHERE token = ?', [token, req.body.token], function (error, results, fields) {
         if (error) {
             res.sendStatus(500);
-        } else {
-            res.json({message: "Success", token: token});
+        } else if (results) {
+            if (results.affectedRows !== undefined && results.affectedRows !== 0) {
+                res.json({message: "Success", token: token});
+            } else {
+                res.status(401).json({message: "Invalid token"});
+            }
         }
     });
 });
@@ -151,50 +156,65 @@ app.delete("/delete_jwt", passport.authenticate('jwt', {session: false}), functi
 
 // Delete_jwt method
 // Remove user and his jwt tokens
-// TODO: Ask for password in params
 app.delete("/delete_user", passport.authenticate('jwt', {session: false}), function (req, res) {
-    db_session.query('DELETE FROM jwt_tokens WHERE uuid = ?', [req.user.uuid], function (error, results, fields) {
+    db_session.query('SELECT * FROM users WHERE uuid = ?', [req.user.uuid], function (error, results, fields) {
         if (error) {
             res.sendStatus(500);
-        } else {
-            db_session.query('DELETE FROM users WHERE uuid = ?', [req.user.uuid], function (error, results, fields) {
-                if (error) {
-                    res.sendStatus(500);
-                } else {
-                    res.json({message: "Success user and his jwt tokens have been deleted"});
-                }
-            });
+        } else if (results) {
+            const password_hash = crypto.createHash('sha256').update(req.body.password ? req.body.password : "").digest('hex');
+            if (password_hash === results[0].password) {
+                db_session.query('DELETE FROM jwt_tokens WHERE uuid = ?', [req.user.uuid], function (error, results, fields) {
+                    if (error) {
+                        res.sendStatus(500);
+                    } else {
+                        db_session.query('DELETE FROM users WHERE uuid = ?', [req.user.uuid], function (error, results, fields) {
+                            if (error) {
+                                res.sendStatus(500);
+                            } else {
+                                res.json({message: "Success user and his jwt tokens have been deleted"});
+                            }
+                        });
+                    }
+                });
+            } else {
+                res.status(401).json({message: "Wrong password"});
+            }
         }
     });
 });
 
 // Update_user method
 // Update user information using the parameters inside of the body of the request
-// TODO: Ask for password in params
 app.put("/update_user", passport.authenticate('jwt', {session: false}), function (req, res) {
     db_session.query('SELECT * FROM users WHERE uuid = ?', [req.user.uuid], function (error, results, fields) {
         if (error) {
             res.sendStatus(500);
         } else if (results) {
-            const password_hash = req.body.password !== undefined ? crypto.createHash('sha256').update(req.body.password).digest('hex') : results[0].password;
-            const nUser = {
-                uuid: req.user.uuid,
-                first_name: req.body.first_name !== undefined ? req.body.first_name : results[0].first_name,
-                last_name: req.body.last_name !== undefined ? req.body.last_name : results[0].last_name,
-                email: req.body.email !== undefined ? req.body.email : results[0].email,
-                password: password_hash
-            };
-            db_session.query('UPDATE users SET first_name = ?, last_name = ?, email = ?, password = ? WHERE uuid = ?', [nUser.first_name, nUser.last_name, nUser.email, nUser.password, nUser.uuid], function (error, results, fields) {
-                if (error) {
-                    if (error.code === 'ER_DUP_ENTRY') {
-                        res.status(500).json({error: "Email already used"});
+            const password_hash = crypto.createHash('sha256').update(req.body.password ? req.body.password : "").digest('hex');
+            if (password_hash === results[0].password) {
+                const password_hash = req.body.new_password !== undefined ? crypto.createHash('sha256').update(req.body.new_password).digest('hex') : results[0].password;
+                const nUser = {
+                    uuid: req.user.uuid,
+                    first_name: req.body.first_name !== undefined ? req.body.first_name : results[0].first_name,
+                    last_name: req.body.last_name !== undefined ? req.body.last_name : results[0].last_name,
+                    email: req.body.email !== undefined ? req.body.email : results[0].email,
+                    password: password_hash
+                };
+                const update = [nUser.first_name, nUser.last_name, nUser.email, nUser.password, nUser.uuid];
+                db_session.query('UPDATE users SET first_name = ?, last_name = ?, email = ?, password = ? WHERE uuid = ?', update, function (error, results, fields) {
+                    if (error) {
+                        if (error.code === 'ER_DUP_ENTRY') {
+                            res.status(500).json({error: "Email already used"});
+                        } else {
+                            res.sendStatus(500);
+                        }
                     } else {
-                        res.sendStatus(500);
+                        res.json({message: "User updated"});
                     }
-                } else {
-                    res.json({message: "User updated"});
-                }
-            });
+                });
+            } else {
+                res.status(401).json({message: "Wrong password"});
+            }
         }
     });
 });

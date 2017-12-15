@@ -204,7 +204,7 @@ app.put("/update_user", passport.authenticate('jwt', {session: false}), function
                 db_session.query('UPDATE users SET first_name = ?, last_name = ?, email = ?, password = ? WHERE uuid = ?', update, function (error, results, fields) {
                     if (error) {
                         if (error.code === 'ER_DUP_ENTRY') {
-                            res.status(500).json({error: "Email already used"});
+                            res.status(403).json({error: "Email already used"});
                         } else {
                             res.sendStatus(500);
                         }

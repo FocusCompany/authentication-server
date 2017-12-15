@@ -23,7 +23,7 @@ docker build --tag=auth_server . && docker run -p3000:3000 -d auth_server
 
 ## API
 ### Endpoints
-##### POST /register
+#### POST /register
 You have to provide this 4 parameters to register a new user
 ```
 - first_name: (ex. Etienne)
@@ -37,7 +37,7 @@ Expected return :
     "message": "User successfully created"
 }
 ``` 
-##### POST /login
+#### POST /login
 You have to provide this 2 parameters to login
 ```
 - email: (ex. et.pasteur@hotmail.fr)
@@ -50,7 +50,7 @@ Expected return :
     "token": "..."
 }
 ``` 
-##### POST /renew_jwt
+#### POST /renew_jwt
 You have to provide this parameter to renew your JWT token
 ```
 - token: (ex. eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9........)
@@ -62,7 +62,7 @@ Expected return :
     "token": "..."
 }
 ``` 
-##### DELETE /delete_jwt
+#### DELETE /delete_jwt
 You have to provide a JWT token inside the `Bearer Token` in the Authorization Header
 
 Expected return :
@@ -71,7 +71,7 @@ Expected return :
     "message": "Success all the token have been deleted"
 }
 ```
-##### DELETE /delete_user
+#### DELETE /delete_user
 You have to provide a JWT token inside the `Bearer Token` in the Authorization Header and this parameter
 ```
 - password: (ex. toto42sh)
@@ -82,7 +82,7 @@ Expected return :
     "message": "Success user and his jwt tokens have been deleted"
 }
 ```
-##### PUT /update_user
+#### PUT /update_user
 You have to provide a JWT token inside the `Bearer Token` in the Authorization Header and this optional parameters
 ```
 - first_name: (ex. Etienne) optional

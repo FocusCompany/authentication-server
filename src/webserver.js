@@ -11,12 +11,12 @@ import fs from "fs";
 
 // Configure JWT token options
 const exp_jwt_delay = 5; // Number of minutes before the expiration of the JWT token
-const privateKey = fs.readFileSync('keys/rsa');
+const privateKey = fs.readFileSync('keys/private_key');
 const ExtractJwt = passportJWT.ExtractJwt;
 const JwtStrategy = passportJWT.Strategy;
 const jwtOptions = {
     jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
-    secretOrKey: fs.readFileSync('keys/rsa.pem')
+    secretOrKey: fs.readFileSync('keys/public_key')
 };
 const options = {
     algorithm: 'RS256'

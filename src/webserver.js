@@ -50,12 +50,6 @@ const server = app.listen(3000, function () {
     console.log("Web server is running on port 3000");
 });
 
-// Ping method
-// Simply return pong
-app.get('/ping', function (req, res) {
-    res.json({message: "pong"});
-});
-
 // Register method
 // Take first_name, last_name, email and password in entry.
 // Check if user is not already registered, if not, generate a UUID and then create a new record in database

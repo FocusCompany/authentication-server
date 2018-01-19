@@ -149,7 +149,7 @@ app.delete("/delete_jwt", passport.authenticate('jwt', {session: false}), functi
         if (error) {
             res.sendStatus(500);
         } else {
-            res.json({message: "Success all the token have been deleted"});
+            res.json({message: "Success the token have been deleted"});
         }
     });
 });
@@ -161,7 +161,7 @@ app.delete("/delete_all_jwt", passport.authenticate('jwt', {session: false}), fu
         if (error) {
             res.sendStatus(500);
         } else {
-            res.json({message: "Success the token have been deleted"});
+            res.json({message: "Success all the token have been deleted"});
         }
     });
 });

@@ -68,6 +68,15 @@ You have to provide a JWT token inside the `Bearer Token` in the Authorization H
 Expected return :
 ```
 {
+    "message": "Success the token have been deleted"
+}
+```
+#### DELETE /delete_all_jwt
+You have to provide a JWT token inside the `Bearer Token` in the Authorization Header
+
+Expected return :
+```
+{
     "message": "Success all the token have been deleted"
 }
 ```

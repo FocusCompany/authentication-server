@@ -50,6 +50,12 @@ const server = app.listen(3000, function () {
     console.log("Web server is running on port 3000");
 });
 
+// Ping method
+// Simply return pong
+app.get('/ping', function (req, res) {
+    res.json({message: "pong"});
+});
+
 // Register method
 // Take first_name, last_name, email and password in entry.
 // Check if user is not already registered, if not, generate a UUID and then create a new record in database
@@ -143,13 +149,25 @@ app.post("/renew_jwt", function (req, res) {
 });
 
 // Delete_jwt method
-// Remove all the jwt_token for a specific user
+// Remove the jwt_token for a specific user (a.k.a Disconnect)
 app.delete("/delete_jwt", passport.authenticate('jwt', {session: false}), function (req, res) {
-    db_session.query('DELETE FROM jwt_tokens WHERE uuid = ?', [req.user.uuid], function (error, results, fields) {
+    db_session.query('DELETE FROM jwt_tokens WHERE token = ?', [req.user.token], function (error, results, fields) {
         if (error) {
             res.sendStatus(500);
         } else {
             res.json({message: "Success all the token have been deleted"});
+        }
+    });
+});
+
+// Delete_all_jwt method
+// Remove all the jwt_token for a specific user
+app.delete("/delete_all_jwt", passport.authenticate('jwt', {session: false}), function (req, res) {
+    db_session.query('DELETE FROM jwt_tokens WHERE uuid = ?', [req.user.uuid], function (error, results, fields) {
+        if (error) {
+            res.sendStatus(500);
+        } else {
+            res.json({message: "Success the token have been deleted"});
         }
     });
 });

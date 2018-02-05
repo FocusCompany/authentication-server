@@ -13,10 +13,12 @@ RUN npm install
 ## COMPILE
 # Copy local src/ to  docker src/
 COPY ./src ./src
+COPY ./keys ./keys
 
 RUN mkdir dist/ && npm run compile
 
 EXPOSE 3000
+EXPOSE 3306
 
 ## RUN
 CMD ["npm", "run", "start"]

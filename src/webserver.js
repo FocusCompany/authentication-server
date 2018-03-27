@@ -124,8 +124,9 @@ app.post("/login", function (req, res) {
 // Renew_jwt method
 // Create a new JWT token and replace the old one in database
 app.post("/renew_jwt", function (req, res) {
+    var buf = new Buffer(req.body.token.split('.')[1], 'base64');
     const payload = {
-        uuid: JSON.parse(Buffer.from(req.body.token.split('.')[1], 'base64')).uuid,
+        uuid: JSON.parse(buf).uuid,
         exp: (Math.floor(new Date() / 1000) + (exp_jwt_delay * 60))
     };
     const token = jwt.sign(payload, privateKey, options);

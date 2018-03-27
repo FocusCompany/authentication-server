@@ -10,6 +10,7 @@ In order to run the server you'll need the following tools :
 
 #### Using npm directly
 ```sh
+npm install
 npm run compile
 npm run start
 ```

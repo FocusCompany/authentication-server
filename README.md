@@ -24,6 +24,11 @@ docker build --tag=auth_server . && docker run -p3000:3000 -d auth_server
 
 ## API
 ### Endpoints
+
+```
+/api/v1/
+```
+
 #### POST /register
 You have to provide this 4 parameters to register a new user
 ```
@@ -39,10 +44,11 @@ Expected return :
 }
 ``` 
 #### POST /login
-You have to provide this 2 parameters to login
+You have to provide this an email and a password in parameters to login (optionally you can provide a device_id to authenticate a device)
 ```
-- email: (ex. et.pasteur@hotmail.fr)
-- password: (ex. toto42sh)
+- email: (ex. et.pasteur@hotmail.fr) required
+- password: (ex. toto42sh) required
+- device_id: (ex. 23) optional
 ```
 Expected return :
 ```
@@ -89,7 +95,7 @@ You have to provide a JWT token inside the `Bearer Token` in the Authorization H
 Expected return :
 ```
 {
-    "message": "Success user and his jwt tokens have been deleted"
+    "message": "Success user and his data have been deleted"
 }
 ```
 #### PUT /update_user
@@ -107,22 +113,108 @@ Expected return :
     "message": "User updated"
 }
 ``` 
+#### GET /get_devices
+You have to provide a JWT token inside the `Bearer Token` in the Authorization Header
+
+Expected return :
+```
+{
+    "message": "Successfully get info ",
+    "devices": [
+        {
+            "id_devices": 1,
+            "id_collections": 1,
+            "devices_name": "Macbook Pro de Etienne",
+            "is_deleted": 0,
+            "users_uuid": "xxxx",
+            "collections_name": "HOME"
+        },
+        {
+            "id_devices": 2,
+            "id_collections": 1,
+            "devices_name": "iPhone de Etienne",
+            "is_deleted": 0,
+            "users_uuid": "xxxx",
+            "collections_name": "WORK"
+        }
+    ]
+}
+```
+#### POST /register_device
+You have to provide a JWT token inside the `Bearer Token` in the Authorization Header and this parameter
+```
+- devices_name: (ex. MacBook Pro de Etienne)
+
+```
+Expected return :
+```
+{
+    "message": "Success the device has been registered",
+    "deviceId": 1
+}
+```
+#### DELETE /delete_device
+You have to provide a JWT token inside the `Bearer Token` in the Authorization Header and this parameter
+```
+- device_id: (ex. 1)
+- keep_data: (ex. true/false)
+
+```
+Expected return :
+```
+{
+    "message": "Device deleted, Data deleted/kept"
+}
+```
+#### POST /create_group
+You have to provide a JWT token inside the `Bearer Token` in the Authorization Header and this parameter
+```
+- collections_name: (ex. HOME)
+```
+Expected return :
+```
+{
+    "message": "Success the group has been created",
+    "groupId": 1
+}
+```
+#### DELETE /delete_group
+You have to provide a JWT token inside the `Bearer Token` in the Authorization Header and this parameter
+```
+- collections_name: (ex. HOME)
+```
+Expected return :
+```
+{
+    "message": "Group deleted"
+}
+```
+#### POST /add_device_to_group
+You have to provide a JWT token inside the `Bearer Token` in the Authorization Header and this parameter
+```
+- collections_name: (ex. HOME)
+- device_id: (ex. 1)
+```
+Expected return :
+```
+{
+    "message": "Success the device has been added to group",
+    "deviceId": 1,
+    "collectionId": 1
+}
+```
+#### DELETE /remove_device_from_group
+You have to provide a JWT token inside the `Bearer Token` in the Authorization Header and this parameter
+```
+- collections_name: (ex. HOME)
+- device_id: (ex. 1)
+```
+Expected return :
+```
+{
+    "message": "Device deleted from group"
+}
+```
 
 ### Error Codes
-All of the methods can return an unexpected `500 Internal Server Error`
-##### /register
-- `403 Forbidden` : {message: "User is already registered"}
-- `400 Bad Request` : {message: "Something is missing, please verify your POST parameters"}
-##### /login
-- `401 Unauthorized` : {message: "User not found"}
-- `401 Unauthorized` : {message: "Wrong password"}
-- `400 Bad Request` : {message: "Email or Password is missing"}
-##### /renew_jwt
-- `401 Unauthorized` : {message: "Invalid token"}
-##### /delete_jwt
-- `401 Unauthorized`
-##### /delete_user
-- `401 Unauthorized` : {message: "Wrong password"}
-##### /update_user
-- `403 Forbidden` : {error: "Email already used"}
-- `401 Unauthorized` : {message: "Wrong password"}
+ToDo

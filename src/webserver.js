@@ -47,6 +47,13 @@ app.use(passport.initialize());
 app.use(bodyParser.urlencoded({extended: true}));
 app.use(bodyParser.json());
 
+// CORS for cross-domain request
+app.use(function(req, res, next) {
+    res.header("Access-Control-Allow-Origin", "*");
+    res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
+    next();
+});
+
 const router = express.Router();
 app.use('/api/v1', router);
 

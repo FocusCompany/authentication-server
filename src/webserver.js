@@ -8,6 +8,7 @@ import passportJWT from "passport-jwt";
 import uuidv4 from "uuid/v4";
 import crypto from "crypto";
 import fs from "fs";
+import errorhandler from "errorhandler";
 
 // Configure JWT token options
 const exp_jwt_delay = 30; // Number of minutes before the expiration of the JWT token
@@ -47,8 +48,10 @@ app.use(passport.initialize());
 app.use(bodyParser.urlencoded({extended: true}));
 app.use(bodyParser.json());
 
+app.use(errorhandler({ dumpExceptions: true, showStack: true }));
+
 // CORS for cross-domain request
-app.use(function(req, res, next) {
+app.use(function (req, res, next) {
     res.header("Access-Control-Allow-Origin", "*");
     res.header('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE,OPTIONS');
     res.header("Access-Control-Allow-Headers", "Origin, Authorization, X-Requested-With, Content-Type, Accept");
@@ -63,11 +66,27 @@ const server = app.listen(3000, function () {
 });
 
 router.get("/get_devices", passport.authenticate('jwt', {session: false}), function (req, res) {
-    db_session.query('SELECT * FROM devices_has_collections dhc JOIN devices d ON (dhc.id_devices = d.id_devices) JOIN collections c ON (dhc.id_collections = c.id_collections) WHERE d.users_uuid = ?', [req.user.users_uuid], function (error, results, fields) {
+    db_session.query('SELECT * FROM devices WHERE users_uuid = ?', [req.user.users_uuid], function (error, results, fields) {
         if (error) {
             res.sendStatus(500);
         } else {
-            res.json({message: "Successfully get info ", devices: results});
+            let devices = results;
+            db_session.query('SELECT * FROM devices_has_collections dhc JOIN collections c ON (dhc.id_collections = c.id_collections) WHERE c.users_uuid = ?', [req.user.users_uuid], function (error, results, fields) {
+                if (error) {
+                    res.sendStatus(500);
+                } else {
+                    const groups = results;
+                    devices.forEach(function(device) {
+                        groups.forEach(function(group) {
+                            if (device.id_devices === group.id_devices) {
+                                device.id_collections = group.id_collections;
+                                device.collections_name = group.collections_name;
+                            }
+                        });
+                    });
+                    res.json({message: "Successfully get info ", devices: devices});
+                }
+            });
         }
     });
 });
@@ -132,7 +151,10 @@ router.post("/create_group", passport.authenticate('jwt', {session: false}), fun
             } else {
                 const collectionId = results[0];
                 if (!collectionId) {
-                    db_session.query('INSERT INTO collections SET ?', {collections_name: req.body.collections_name, users_uuid: req.user.users_uuid}, function (error, results, fields) {
+                    db_session.query('INSERT INTO collections SET ?', {
+                        collections_name: req.body.collections_name,
+                        users_uuid: req.user.users_uuid
+                    }, function (error, results, fields) {
                         if (error) {
                             res.sendStatus(500);
                         } else {
@@ -191,11 +213,18 @@ router.post("/add_device_to_group", passport.authenticate('jwt', {session: false
                                     } else {
                                         const alreadyRegistered = results[0];
                                         if (!alreadyRegistered) {
-                                            db_session.query('INSERT INTO devices_has_collections SET ?', {id_devices: deviceId.id_devices, id_collections: collectionId.id_collections}, function (error, results, fields) {
+                                            db_session.query('INSERT INTO devices_has_collections SET ?', {
+                                                id_devices: deviceId.id_devices,
+                                                id_collections: collectionId.id_collections
+                                            }, function (error, results, fields) {
                                                 if (error) {
                                                     res.sendStatus(500);
                                                 } else {
-                                                    res.json({message: "Success the device has been added to group", deviceId: parseInt(deviceId.id_devices), collectionId: collectionId.id_collections});
+                                                    res.json({
+                                                        message: "Success the device has been added to group",
+                                                        deviceId: parseInt(deviceId.id_devices),
+                                                        collectionId: collectionId.id_collections
+                                                    });
                                                 }
                                             });
                                         } else {
@@ -480,6 +509,10 @@ const gracefulShutdown = function () {
         process.exit()
     }, 10000);
 };
+
+process.on('uncaughtException', function (exception) {
+    console.log(exception);
+});
 
 // Catch SIGTERM and SIGINT signal and call gracefulShutdown function
 process.on('SIGTERM', gracefulShutdown);

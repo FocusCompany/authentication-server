@@ -7,7 +7,7 @@
     "test": "mocha",
     "dev": "nodemon src/webserver.js --exec babel-node --presets es2015,stage-2",
     "compile": "babel --presets es2015,stage-2 ./src/ --out-dir dist/",
-    "start": "nodejs dist/webserver.js"
+    "start": "npm run compile && nodejs dist/webserver.js"
   },
   "repository": {
     "type": "git",

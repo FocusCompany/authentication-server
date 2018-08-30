@@ -10,6 +10,15 @@ import crypto from "crypto";
 import fs from "fs";
 import errorhandler from "errorhandler";
 
+const API_STATUS_CODE = {
+    MISSING_PARAMETERS: "MISSING_PARAMETERS",
+    WRONG_PARAMETERS: "WRONG_PARAMETERS",
+    ALREADY_REGISTERED: "ALREADY_REGISTERED",
+    DATABASE_ERROR: "DATABASE_ERROR",
+    SUCCESS: "SUCCESS"
+};
+
+
 // Configure JWT token options
 const exp_jwt_delay = 30; // Number of minutes before the expiration of the JWT token
 const privateKey = fs.readFileSync('keys/private_key');
@@ -68,12 +77,12 @@ const server = app.listen(3000, function () {
 router.get("/get_devices", passport.authenticate('jwt', {session: false}), function (req, res) {
     db_session.query('SELECT * FROM devices WHERE users_uuid = ?', [req.user.users_uuid], function (error, results, fields) {
         if (error) {
-            res.sendStatus(500);
+            res.status(500).json({code: API_STATUS_CODE.DATABASE_ERROR, message: "Query to database error"});
         } else {
             let devices = results;
             db_session.query('SELECT * FROM devices_has_collections dhc JOIN collections c ON (dhc.id_collections = c.id_collections) WHERE c.users_uuid = ?', [req.user.users_uuid], function (error, results, fields) {
                 if (error) {
-                    res.sendStatus(500);
+                    res.status(500).json({code: API_STATUS_CODE.DATABASE_ERROR, message: "Query to database error"});
                 } else {
                     const groups = results;
                     devices.forEach(function(device) {
@@ -84,7 +93,7 @@ router.get("/get_devices", passport.authenticate('jwt', {session: false}), funct
                             }
                         });
                     });
-                    res.json({message: "Successfully get info ", devices: devices});
+                    res.json({code: API_STATUS_CODE.SUCCESS, message: "Successfully get info ", devices: devices});
                 }
             });
         }
@@ -95,13 +104,13 @@ router.post("/register_device", passport.authenticate('jwt', {session: false}), 
     if (req.body.devices_name) {
         db_session.query('INSERT INTO devices SET ?', {devices_name: req.body.devices_name, users_uuid: req.user.users_uuid}, function (error, results, fields) {
             if (error) {
-                res.sendStatus(500);
+                res.status(500).json({code: API_STATUS_CODE.DATABASE_ERROR, message: "Query to database error"});
             } else {
-                res.json({message: "Success the device has been registered", deviceId: results.insertId});
+                res.json({code: API_STATUS_CODE.SUCCESS, message: "Success the device has been registered", deviceId: results.insertId});
             }
         });
     } else {
-        res.status(400).json({message: "Device name is missing"});
+        res.status(400).json({code: API_STATUS_CODE.MISSING_PARAMETERS, message: "Device name is missing"});
     }
 });
 
@@ -111,35 +120,35 @@ router.delete("/delete_device", passport.authenticate('jwt', {session: false}), 
             if (req.body.keep_data === "false") {
                 db_session.query('DELETE FROM devices WHERE id_devices = ? AND users_uuid = ?', [req.body.device_id, req.user.users_uuid], function (error, results, fields) {
                     if (error) {
-                        res.sendStatus(500);
+                        res.status(500).json({code: API_STATUS_CODE.DATABASE_ERROR, message: "Query to database error"});
                     } else {
                         if (results.affectedRows === 0) {
-                            res.status(400).json({message: "Wrong device_id"});
+                            res.status(400).json({code: API_STATUS_CODE.WRONG_PARAMETERS, message: "Wrong device_id"});
                         } else {
-                            res.json({message: "Device deleted, Data deleted"});
+                            res.json({code: API_STATUS_CODE.SUCCESS, message: "Device deleted, Data deleted"});
                         }
                     }
                 });
             } else if (req.body.keep_data === "true") {
                 db_session.query('UPDATE devices SET is_deleted = ? WHERE id_devices = ? AND users_uuid = ?', [true, req.body.device_id, req.user.users_uuid], function (error, results, fields) {
                     if (error) {
-                        res.sendStatus(500);
+                        res.status(500).json({code: API_STATUS_CODE.DATABASE_ERROR, message: "Query to database error"});
                     } else {
                         if (results.affectedRows === 0) {
-                            res.status(400).json({message: "Wrong device_id"});
+                            res.status(400).json({code: API_STATUS_CODE.WRONG_PARAMETERS, message: "Wrong device_id"});
                         } else {
-                            res.json({message: "Device deleted, Data kepy"});
+                            res.json({code: API_STATUS_CODE.SUCCESS, message: "Device deleted, Data kepy"});
                         }
                     }
                 });
             } else {
-                res.status(400).json({message: "Keep_data is wrong"});
+                res.status(400).json({code: API_STATUS_CODE.WRONG_PARAMETERS, message: "Keep_data is wrong"});
             }
         } else {
-            res.status(400).json({message: "Keep_data is missing"});
+            res.status(400).json({code: API_STATUS_CODE.MISSING_PARAMETERS, message: "Keep_data is missing"});
         }
     } else {
-        res.status(400).json({message: "Device_id is missing"});
+        res.status(400).json({code: API_STATUS_CODE.MISSING_PARAMETERS, message: "Device_id is missing"});
     }
 });
 
@@ -147,7 +156,7 @@ router.post("/create_group", passport.authenticate('jwt', {session: false}), fun
     if (req.body.collections_name) {
         db_session.query('SELECT id_collections FROM collections WHERE users_uuid = ? AND collections_name = ?', [req.user.users_uuid, req.body.collections_name], function (error, results, fields) {
             if (error) {
-                res.sendStatus(500);
+                res.status(500).json({code: API_STATUS_CODE.DATABASE_ERROR, message: "Query to database error"});
             } else {
                 const collectionId = results[0];
                 if (!collectionId) {
@@ -156,18 +165,18 @@ router.post("/create_group", passport.authenticate('jwt', {session: false}), fun
                         users_uuid: req.user.users_uuid
                     }, function (error, results, fields) {
                         if (error) {
-                            res.sendStatus(500);
+                            res.status(500).json({code: API_STATUS_CODE.DATABASE_ERROR, message: "Query to database error"});
                         } else {
-                            res.json({message: "Success the group has been created", groupId: results.insertId});
+                            res.json({code: API_STATUS_CODE.SUCCESS, message: "Success the group has been created", groupId: results.insertId});
                         }
                     });
                 } else {
-                    res.status(400).json({message: "This group already exist"});
+                    res.status(400).json({code: API_STATUS_CODE.ALREADY_REGISTERED, message: "This group already exist"});
                 }
             }
         });
     } else {
-        res.status(400).json({message: "Group name is missing"});
+        res.status(400).json({code: API_STATUS_CODE.MISSING_PARAMETERS, message: "Group name is missing"});
     }
 });
 
@@ -175,17 +184,17 @@ router.delete("/delete_group", passport.authenticate('jwt', {session: false}), f
     if (req.body.collections_name) {
         db_session.query('DELETE FROM collections WHERE collections_name = ? AND users_uuid = ?', [req.body.collections_name, req.user.users_uuid], function (error, results, fields) {
             if (error) {
-                res.sendStatus(500);
+                res.status(500).json({code: API_STATUS_CODE.DATABASE_ERROR, message: "Query to database error"});
             } else {
                 if (results.affectedRows === 0) {
-                    res.status(400).json({message: "Wrong group name"});
+                    res.status(400).json({code: API_STATUS_CODE.WRONG_PARAMETERS, message: "Wrong group name"});
                 } else {
-                    res.json({message: "Group deleted"});
+                    res.json({code: API_STATUS_CODE.SUCCESS, message: "Group deleted"});
                 }
             }
         });
     } else {
-        res.status(400).json({message: "Group name is missing"});
+        res.status(400).json({code: API_STATUS_CODE.MISSING_PARAMETERS, message: "Group name is missing"});
     }
 });
 
@@ -193,23 +202,23 @@ router.post("/add_device_to_group", passport.authenticate('jwt', {session: false
     if (req.body.collections_name && req.body.device_id) {
         db_session.query('SELECT id_collections FROM collections WHERE users_uuid = ? AND collections_name = ?', [req.user.users_uuid, req.body.collections_name], function (error, results, fields) {
             if (error) {
-                res.sendStatus(500);
+                res.status(500).json({code: API_STATUS_CODE.DATABASE_ERROR, message: "Query to database error"});
             } else {
                 const collectionId = results[0];
                 if (!collectionId) {
-                    res.status(400).json({message: "This group doesn't exist"});
+                    res.status(400).json({code: API_STATUS_CODE.WRONG_PARAMETERS, message: "This group doesn't exist"});
                 } else {
                     db_session.query('SELECT id_devices FROM devices WHERE users_uuid = ? AND id_devices = ?', [req.user.users_uuid, req.body.device_id], function (error, results, fields) {
                         if (error) {
-                            res.sendStatus(500);
+                            res.status(500).json({code: API_STATUS_CODE.DATABASE_ERROR, message: "Query to database error"});
                         } else {
                             const deviceId = results[0];
                             if (!deviceId) {
-                                res.status(400).json({message: "This device doesn't exist"});
+                                res.status(400).json({code: API_STATUS_CODE.WRONG_PARAMETERS, message: "This device doesn't exist"});
                             } else {
                                 db_session.query('SELECT * FROM devices_has_collections WHERE id_devices = ? AND id_collections = ?', [deviceId.id_devices, collectionId.id_collections], function (error, results, fields) {
                                     if (error) {
-                                        res.sendStatus(500);
+                                        res.status(500).json({code: API_STATUS_CODE.DATABASE_ERROR, message: "Query to database error"});
                                     } else {
                                         const alreadyRegistered = results[0];
                                         if (!alreadyRegistered) {
@@ -218,9 +227,10 @@ router.post("/add_device_to_group", passport.authenticate('jwt', {session: false
                                                 id_collections: collectionId.id_collections
                                             }, function (error, results, fields) {
                                                 if (error) {
-                                                    res.sendStatus(500);
+                                                    res.status(500).json({code: API_STATUS_CODE.DATABASE_ERROR, message: "Query to database error"});
                                                 } else {
                                                     res.json({
+                                                        code: API_STATUS_CODE.SUCCESS,
                                                         message: "Success the device has been added to group",
                                                         deviceId: parseInt(deviceId.id_devices),
                                                         collectionId: collectionId.id_collections
@@ -228,7 +238,7 @@ router.post("/add_device_to_group", passport.authenticate('jwt', {session: false
                                                 }
                                             });
                                         } else {
-                                            res.json({message: "The device is already registered in this group"});
+                                            res.status(400).json({code: API_STATUS_CODE.ALREADY_REGISTERED, message: "The device is already registered in this group"});
                                         }
                                     }
                                 });
@@ -239,7 +249,7 @@ router.post("/add_device_to_group", passport.authenticate('jwt', {session: false
             }
         });
     } else {
-        res.status(400).json({message: "Group name or device_id is missing"});
+        res.status(400).json({code: API_STATUS_CODE.MISSING_PARAMETERS, message: "Group name or device_id is missing"});
     }
 });
 
@@ -247,33 +257,33 @@ router.delete("/remove_device_from_group", passport.authenticate('jwt', {session
     if (req.body.collections_name && req.body.device_id) {
         db_session.query('SELECT id_collections FROM collections WHERE users_uuid = ? AND collections_name = ?', [req.user.users_uuid, req.body.collections_name], function (error, results, fields) {
             if (error) {
-                res.sendStatus(500);
+                res.status(500).json({code: API_STATUS_CODE.DATABASE_ERROR, message: "Query to database error"});
             } else {
                 const collectionId = results[0];
                 if (!collectionId) {
-                    res.status(400).json({message: "This group doesn't exist"});
+                    res.status(400).json({code: API_STATUS_CODE.WRONG_PARAMETERS, message: "This group doesn't exist"});
                 } else {
                     db_session.query('SELECT id_devices FROM devices WHERE users_uuid = ? AND id_devices = ?', [req.user.users_uuid, req.body.device_id], function (error, results, fields) {
                         if (error) {
-                            res.sendStatus(500);
+                            res.status(500).json({code: API_STATUS_CODE.DATABASE_ERROR, message: "Query to database error"});
                         } else {
                             const deviceId = results[0];
                             if (!deviceId) {
-                                res.status(400).json({message: "This device doesn't exist"});
+                                res.status(400).json({code: API_STATUS_CODE.WRONG_PARAMETERS, message: "This device doesn't exist"});
                             } else {
                                 db_session.query('SELECT * FROM devices_has_collections WHERE id_devices = ? AND id_collections = ?', [req.body.device_id, collectionId.id_collections], function (error, results, fields) {
                                     if (error) {
-                                        res.sendStatus(500);
+                                        res.status(500).json({code: API_STATUS_CODE.DATABASE_ERROR, message: "Query to database error"});
                                     } else {
                                         const inGroup = results[0];
                                         if (!inGroup) {
-                                            res.status(400).json({message: "The device is not registered in this group"});
+                                            res.status(400).json({code: API_STATUS_CODE.WRONG_PARAMETERS, message: "The device is not registered in this group"});
                                         } else {
                                             db_session.query('DELETE FROM devices_has_collections WHERE id_devices = ? AND id_collections = ?', [inGroup.id_devices, inGroup.id_collections], function (error, results, fields) {
                                                 if (error) {
-                                                    res.sendStatus(500);
+                                                    res.status(500).json({code: API_STATUS_CODE.DATABASE_ERROR, message: "Query to database error"});
                                                 } else {
-                                                    res.json({message: "Device deleted from group"});
+                                                    res.json({code: API_STATUS_CODE.SUCCESS, message: "Device deleted from group"});
                                                 }
                                             });
                                         }
@@ -286,7 +296,7 @@ router.delete("/remove_device_from_group", passport.authenticate('jwt', {session
             }
         });
     } else {
-        res.status(400).json({message: "Group name or device_id is missing"});
+        res.status(400).json({code: API_STATUS_CODE.MISSING_PARAMETERS, message: "Group name or device_id is missing"});
     }
 });
 
@@ -302,16 +312,16 @@ router.post('/register', (req, res) => {
         };
         db_session.query('SELECT * FROM users WHERE email = ?', [req.body.email], function (error, results, fields) {
             if (error) {
-                res.sendStatus(500);
+                res.status(500).json({code: API_STATUS_CODE.DATABASE_ERROR, message: "Query to database error"});
             } else {
                 if (results.length !== 0) {
-                    res.status(403).json({message: "User is already registered"});
+                    res.status(403).json({code: API_STATUS_CODE.ALREADY_REGISTERED, message: "User is already registered"});
                 } else {
                     db_session.query('INSERT INTO users SET ?', user_info, function (error, results, fields) {
                         if (error) {
-                            res.sendStatus(500);
+                            res.status(500).json({code: API_STATUS_CODE.DATABASE_ERROR, message: "Query to database error"});
                         } else {
-                            res.json({message: "User successfully created"});
+                            res.json({code: API_STATUS_CODE.SUCCESS, message: "User successfully created"});
 
                         }
                     });
@@ -327,21 +337,21 @@ router.post("/login", function (req, res) {
     if (req.body.email && req.body.password) {
         db_session.query('SELECT * FROM users WHERE email = ?', req.body.email, function (error, results, fields) {
             if (error) {
-                res.sendStatus(500);
+                res.status(500).json({code: API_STATUS_CODE.DATABASE_ERROR, message: "Query to database error"});
             } else {
                 const user = results[0];
                 const password_hash = crypto.createHash('sha256').update(req.body.password).digest('hex');
                 if (!user) {
-                    res.status(401).json({message: "User not found"});
+                    res.status(401).json({code: API_STATUS_CODE.WRONG_PARAMETERS, message: "User not found"});
                 } else if (user.password === password_hash) {
                     if (req.body.device_id) {
                         db_session.query('SELECT id_devices FROM devices WHERE users_uuid = ? AND id_devices = ?', [user.uuid, req.body.device_id], function (error, results, fields) {
                             if (error) {
-                                res.sendStatus(500);
+                                res.status(500).json({code: API_STATUS_CODE.DATABASE_ERROR, message: "Query to database error"});
                             } else {
                                 const deviceId = results[0];
                                 if (!deviceId) {
-                                    res.status(400).json({message: "This device doesn't exist"});
+                                    res.status(400).json({code: API_STATUS_CODE.WRONG_PARAMETERS, message: "This device doesn't exist"});
                                     return;
                                 } else {
                                     const payload = {
@@ -352,9 +362,9 @@ router.post("/login", function (req, res) {
                                     const token = jwt.sign(payload, privateKey, options);
                                     db_session.query('INSERT INTO jwt_tokens SET ?', {users_uuid: user.uuid, token: token}, function (error, results, fields) {
                                         if (error) {
-                                            res.sendStatus(500);
+                                            res.status(500).json({code: API_STATUS_CODE.DATABASE_ERROR, message: "Query to database error"});
                                         } else {
-                                            res.json({message: "Success", token: token});
+                                            res.json({code: API_STATUS_CODE.SUCCESS, message: "Success", token: token});
                                         }
                                     });
                                 }
@@ -368,19 +378,19 @@ router.post("/login", function (req, res) {
                         const token = jwt.sign(payload, privateKey, options);
                         db_session.query('INSERT INTO jwt_tokens SET ?', {users_uuid: user.uuid, token: token}, function (error, results, fields) {
                             if (error) {
-                                res.sendStatus(500);
+                                res.status(500).json({code: API_STATUS_CODE.DATABASE_ERROR, message: "Query to database error"});
                             } else {
-                                res.json({message: "Success", token: token});
+                                res.json({code: API_STATUS_CODE.SUCCESS, message: "Success", token: token});
                             }
                         });
                     }
                 } else {
-                    res.status(401).json({message: "Wrong password"});
+                    res.status(401).json({code: API_STATUS_CODE.WRONG_PARAMETERS, message: "Wrong password"});
                 }
             }
         });
     } else {
-        res.status(400).json({message: "Email or Password is missing"});
+        res.status(400).json({code: API_STATUS_CODE.MISSING_PARAMETERS, message: "Email or Password is missing"});
     }
 });
 
@@ -403,26 +413,26 @@ router.post("/renew_jwt", function (req, res) {
         const token = jwt.sign(payload, privateKey, options);
         db_session.query('UPDATE jwt_tokens SET token = ? WHERE token = ?', [token, req.body.token], function (error, results, fields) {
             if (error) {
-                res.sendStatus(500);
+                res.status(500).json({code: API_STATUS_CODE.DATABASE_ERROR, message: "Query to database error"});
             } else if (results) {
                 if (results.affectedRows !== undefined && results.affectedRows !== 0) {
-                    res.json({message: "Success", token: token});
+                    res.json({code: API_STATUS_CODE.SUCCESS, message: "Success", token: token});
                 } else {
-                    res.status(401).json({message: "Invalid token"});
+                    res.status(401).json({code: API_STATUS_CODE.WRONG_PARAMETERS, message: "Invalid token"});
                 }
             }
         });
     } else {
-        res.status(400).json({message: "Old token is missing"});
+        res.status(400).json({code: API_STATUS_CODE.MISSING_PARAMETERS, message: "Old token is missing"});
     }
 });
 
 router.delete("/delete_jwt", passport.authenticate('jwt', {session: false}), function (req, res) {
     db_session.query('DELETE FROM jwt_tokens WHERE token = ?', [req.user.token], function (error, results, fields) {
         if (error) {
-            res.sendStatus(500);
+            res.status(500).json({code: API_STATUS_CODE.DATABASE_ERROR, message: "Query to database error"});
         } else {
-            res.json({message: "Success the token have been deleted"});
+            res.json({code: API_STATUS_CODE.SUCCESS, message: "Success the token have been deleted"});
         }
     });
 });
@@ -430,9 +440,9 @@ router.delete("/delete_jwt", passport.authenticate('jwt', {session: false}), fun
 router.delete("/delete_all_jwt", passport.authenticate('jwt', {session: false}), function (req, res) {
     db_session.query('DELETE FROM jwt_tokens WHERE users_uuid = ?', [req.user.users_uuid], function (error, results, fields) {
         if (error) {
-            res.sendStatus(500);
+            res.status(500).json({code: API_STATUS_CODE.DATABASE_ERROR, message: "Query to database error"});
         } else {
-            res.json({message: "Success all the token have been deleted"});
+            res.json({code: API_STATUS_CODE.SUCCESS, message: "Success all the token have been deleted"});
         }
     });
 });
@@ -440,22 +450,22 @@ router.delete("/delete_all_jwt", passport.authenticate('jwt', {session: false}),
 router.delete("/delete_user", passport.authenticate('jwt', {session: false}), function (req, res) {
     db_session.query('SELECT * FROM users WHERE uuid = ?', [req.user.users_uuid], function (error, results, fields) {
         if (error) {
-            res.sendStatus(500);
+            res.status(500).json({code: API_STATUS_CODE.DATABASE_ERROR, message: "Query to database error"});
         } else if (results && req.body.password) {
             const password_hash = crypto.createHash('sha256').update(req.body.password ? req.body.password : "").digest('hex');
             if (password_hash === results[0].password) {
                 db_session.query('DELETE FROM users WHERE uuid = ?', [req.user.users_uuid], function (error, results, fields) {
                     if (error) {
-                        res.sendStatus(500);
+                        res.status(500).json({code: API_STATUS_CODE.DATABASE_ERROR, message: "Query to database error"});
                     } else {
-                        res.json({message: "Success user and his data have been deleted"});
+                        res.json({code: API_STATUS_CODE.SUCCESS, message: "Success user and his data have been deleted"});
                     }
                 });
             } else {
-                res.status(401).json({message: "Wrong password"});
+                res.status(401).json({code: API_STATUS_CODE.WRONG_PARAMETERS, message: "Wrong password"});
             }
         } else {
-            res.status(401).json({message: "Missing password"});
+            res.status(401).json({code: API_STATUS_CODE.MISSING_PARAMETERS, message: "Missing password"});
         }
     });
 });
@@ -463,7 +473,7 @@ router.delete("/delete_user", passport.authenticate('jwt', {session: false}), fu
 router.put("/update_user", passport.authenticate('jwt', {session: false}), function (req, res) {
     db_session.query('SELECT * FROM users WHERE uuid = ?', [req.user.users_uuid], function (error, results, fields) {
         if (error) {
-            res.sendStatus(500);
+            res.status(500).json({code: API_STATUS_CODE.DATABASE_ERROR, message: "Query to database error"});
         } else if (results) {
             const password_hash = crypto.createHash('sha256').update(req.body.password ? req.body.password : "").digest('hex');
             if (password_hash === results[0].password) {
@@ -479,19 +489,19 @@ router.put("/update_user", passport.authenticate('jwt', {session: false}), funct
                 db_session.query('UPDATE users SET first_name = ?, last_name = ?, email = ?, password = ? WHERE uuid = ?', update, function (error, results, fields) {
                     if (error) {
                         if (error.code === 'ER_DUP_ENTRY') {
-                            res.status(403).json({error: "Email already used"});
+                            res.status(403).json({code: API_STATUS_CODE.ALREADY_REGISTERED, error: "Email already used"});
                         } else {
-                            res.sendStatus(500);
+                            res.status(500).json({code: API_STATUS_CODE.DATABASE_ERROR, message: "Query to database error"});
                         }
                     } else {
-                        res.json({message: "User updated"});
+                        res.json({code: API_STATUS_CODE.SUCCESS, message: "User updated"});
                     }
                 });
             } else {
-                res.status(401).json({message: "Wrong password"});
+                res.status(401).json({code: API_STATUS_CODE.WRONG_PARAMETERS, message: "Wrong password"});
             }
         } else {
-            res.status(401).json({message: "User doesn't exist"});
+            res.status(401).json({code: API_STATUS_CODE.WRONG_PARAMETERS, message: "User doesn't exist"});
         }
     });
 });

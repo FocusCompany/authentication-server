@@ -189,20 +189,39 @@ Expected return :
     "message": "Group deleted"
 }
 ```
-#### POST /add_device_to_group
-You have to provide a JWT token inside the `Bearer Token` in the Authorization Header and this parameter
-```
-- collections_name: (ex. HOME)
-- device_id: (ex. 1)
-```
+#### <GET> /list_group
+You have to provide a JWT token inside the `Bearer Token` in the Authorization Header
 Expected return :
 ```
 {
-    "message": "Success the device has been added to group",
-    "deviceId": 1,
-    "collectionId": 1
+    "code": "SUCCESS",
+    "message": "Success",
+    "collections": [
+        {
+            "id_collections": 3,
+            "collections_name": "HOME"
+        },
+        {
+            "id_collections": 4,
+            "collections_name": "WORK"
+        }
+    ]
 }
 ```
+#### POST /add_device_to_group
+   You have to provide a JWT token inside the `Bearer Token` in the Authorization Header and this parameter
+   ```
+   - collections_name: (ex. HOME)
+   - device_id: (ex. 1)
+   ```
+   Expected return :
+   ```
+   {
+       "message": "Success the device has been added to group",
+       "deviceId": 1,
+       "collectionId": 1
+   }
+   ```
 #### DELETE /remove_device_from_group
 You have to provide a JWT token inside the `Bearer Token` in the Authorization Header and this parameter
 ```

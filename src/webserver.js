@@ -198,6 +198,22 @@ router.delete("/delete_group", passport.authenticate('jwt', {session: false}), f
     }
 });
 
+router.get("/list_group", passport.authenticate('jwt', {session: false}), function (req, res) {
+    db_session.query('SELECT id_collections, collections_name FROM collections WHERE users_uuid = ?', [req.user.users_uuid], function (error, results, fields) {
+        if (error) {
+            res.status(500).json({code: API_STATUS_CODE.DATABASE_ERROR, message: "Query to database error"});
+        } else {
+            console.log(req.user.users_uuid);
+            console.log(results);
+            res.json({
+                code: API_STATUS_CODE.SUCCESS,
+                message: "Success",
+                collections: results
+            });
+        }
+    });
+});
+
 router.post("/add_device_to_group", passport.authenticate('jwt', {session: false}), function (req, res) {
     if (req.body.collections_name && req.body.device_id) {
         db_session.query('SELECT id_collections FROM collections WHERE users_uuid = ? AND collections_name = ?', [req.user.users_uuid, req.body.collections_name], function (error, results, fields) {

@@ -119,23 +119,31 @@ You have to provide a JWT token inside the `Bearer Token` in the Authorization H
 Expected return :
 ```
 {
+    "code": "SUCCESS",
     "message": "Successfully get info ",
     "devices": [
         {
             "id_devices": 1,
-            "id_collections": 1,
-            "devices_name": "Macbook Pro de Etienne",
+            "devices_name": "MacBook Pro de Etienne",
             "is_deleted": 0,
-            "users_uuid": "xxxx",
-            "collections_name": "HOME"
+            "users_uuid": "66ccfbd9-8844-4370-a517-80646dad3820",
+            "collections": [
+                {
+                    "id_collections": 3,
+                    "collections_name": "HOME"
+                },
+                {
+                    "id_collections": 4,
+                    "collections_name": "WORK"
+                }
+            ]
         },
         {
             "id_devices": 2,
-            "id_collections": 1,
-            "devices_name": "iPhone de Etienne",
+            "devices_name": "Test",
             "is_deleted": 0,
-            "users_uuid": "xxxx",
-            "collections_name": "WORK"
+            "users_uuid": "66ccfbd9-8844-4370-a517-80646dad3820",
+            "collections": []
         }
     ]
 }

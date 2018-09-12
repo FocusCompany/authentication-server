@@ -86,10 +86,14 @@ router.get("/get_devices", passport.authenticate('jwt', {session: false}), funct
                 } else {
                     const groups = results;
                     devices.forEach(function(device) {
+                        device.collections = [];
                         groups.forEach(function(group) {
                             if (device.id_devices === group.id_devices) {
-                                device.id_collections = group.id_collections;
-                                device.collections_name = group.collections_name;
+                                let collection = {
+                                    id_collections: group.id_collections,
+                                    collections_name: group.collections_name
+                                };
+                                device.collections.push(collection);
                             }
                         });
                     });

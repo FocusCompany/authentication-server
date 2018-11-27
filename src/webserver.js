@@ -57,7 +57,7 @@ app.use(passport.initialize());
 app.use(bodyParser.urlencoded({extended: true}));
 app.use(bodyParser.json());
 
-app.use(errorhandler({ dumpExceptions: true, showStack: true }));
+app.use(errorhandler({dumpExceptions: true, showStack: true}));
 
 // CORS for cross-domain request
 app.use(function (req, res, next) {
@@ -85,9 +85,9 @@ router.get("/get_devices", passport.authenticate('jwt', {session: false}), funct
                     res.status(500).json({code: API_STATUS_CODE.DATABASE_ERROR, message: "Query to database error"});
                 } else {
                     const groups = results;
-                    devices.forEach(function(device) {
+                    devices.forEach(function (device) {
                         device.collections = [];
-                        groups.forEach(function(group) {
+                        groups.forEach(function (group) {
                             if (device.id_devices === group.id_devices) {
                                 let collection = {
                                     id_collections: group.id_collections,
@@ -207,8 +207,6 @@ router.get("/list_group", passport.authenticate('jwt', {session: false}), functi
         if (error) {
             res.status(500).json({code: API_STATUS_CODE.DATABASE_ERROR, message: "Query to database error"});
         } else {
-            console.log(req.user.users_uuid);
-            console.log(results);
             res.json({
                 code: API_STATUS_CODE.SUCCESS,
                 message: "Success",
@@ -374,17 +372,32 @@ router.post("/login", function (req, res) {
                                     res.status(400).json({code: API_STATUS_CODE.WRONG_PARAMETERS, message: "This device doesn't exist"});
                                     return;
                                 } else {
-                                    const payload = {
-                                        uuid: user.uuid,
-                                        device_id: deviceId.id_devices,
-                                        exp: (Math.floor(new Date() / 1000) + (exp_jwt_delay * 60))
-                                    };
-                                    const token = jwt.sign(payload, privateKey, options);
-                                    db_session.query('INSERT INTO jwt_tokens SET ?', {users_uuid: user.uuid, token: token}, function (error, results, fields) {
+                                    let groupsInfo = [];
+                                    db_session.query('SELECT * FROM devices_has_collections dhc JOIN collections c ON (dhc.id_collections = c.id_collections) WHERE c.users_uuid = ? AND dhc.id_devices = ?', [user.uuid, deviceId.id_devices], function (error, results, fields) {
                                         if (error) {
                                             res.status(500).json({code: API_STATUS_CODE.DATABASE_ERROR, message: "Query to database error"});
                                         } else {
-                                            res.json({code: API_STATUS_CODE.SUCCESS, message: "Success", token: token});
+                                            results.forEach(function (group) {
+                                                let collection = {
+                                                    id_collections: group.id_collections,
+                                                    collections_name: group.collections_name
+                                                };
+                                                groupsInfo.push(collection);
+                                            });
+                                            const payload = {
+                                                uuid: user.uuid,
+                                                device_id: deviceId.id_devices,
+                                                groups: groupsInfo,
+                                                exp: (Math.floor(new Date() / 1000) + (exp_jwt_delay * 60))
+                                            };
+                                            const token = jwt.sign(payload, privateKey, options);
+                                            db_session.query('INSERT INTO jwt_tokens SET ?', {users_uuid: user.uuid, token: token}, function (error, results, fields) {
+                                                if (error) {
+                                                    res.status(500).json({code: API_STATUS_CODE.DATABASE_ERROR, message: "Query to database error"});
+                                                } else {
+                                                    res.json({code: API_STATUS_CODE.SUCCESS, message: "Success", token: token});
+                                                }
+                                            });
                                         }
                                     });
                                 }

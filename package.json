@@ -7,7 +7,9 @@
     "test": "mocha",
     "dev": "nodemon src/webserver.js --exec babel-node --presets es2015,stage-2",
     "compile": "babel --presets es2015,stage-2 ./src/ --out-dir dist/",
-    "start": "npm run compile && nodejs dist/webserver.js"
+    "start": "npm run compile && nodejs dist/webserver.js",
+    "migrate": "db-migrate up",
+    "new-migration": "db-migrate create"
   },
   "repository": {
     "type": "git",
@@ -21,6 +23,8 @@
   "homepage": "https://github.com/FocusCompany/authentication-server#readme",
   "dependencies": {
     "body-parser": "^1.18.2",
+    "db-migrate": "^0.11.4",
+    "db-migrate-mysql": "^1.1.10",
     "errorhandler": "^1.5.0",
     "express": "^4.16.3",
     "jsonwebtoken": "^8.2.1",

@@ -6,20 +6,12 @@ The server responsible for handling Focus authentication
 ### Prerequisites
 In order to run the server you'll need the following tools :
  - [NodeJS](https://nodejs.org/en/download/package-manager/)
- - [Docker](https://docs.docker.com/engine/installation/#supported-platforms) (optional)
+ - [Docker](https://docs.docker.com/engine/installation/#supported-platforms)
 
-#### Using npm directly
-```sh
-npm install
-npm run compile
-npm run start
-```
-
-#### Using docker (optional)
 ```
 git clone https://github.com/FocusCompany/authentication-server.git
 cd authentication-server
-docker build --tag=auth_server . && docker run -p3000:3000 -d auth_server
+docker-compose up -d
 ```
 
 ## API

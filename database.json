@@ -1,0 +1,10 @@
+{
+    "defaultEnv": "local",
+    "local": {
+	"host": "focus-auth-db",
+	"database": "authentication_server",
+	"driver": "mysql",
+	"user": "root",
+	"password": "focus42sh"
+    }
+}

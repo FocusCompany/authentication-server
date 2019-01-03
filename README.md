@@ -11,7 +11,7 @@ In order to run the server you'll need the following tools :
 ```
 git clone https://github.com/FocusCompany/authentication-server.git
 cd authentication-server
-docker-compose up -d
+docker-compose -f compose-<prod|dev>.yml up -d
 ```
 
 ## API

@@ -1,0 +1,52 @@
+version: "3"
+networks: 
+  authentication:
+    driver: bridge
+  docker-nginx:
+    external:
+      name: microservices
+      
+services:
+  focus-auth-db:
+    image: mysql:8.0.2
+    container_name: db_auth
+    hostname: focus-auth-db
+    networks:
+      - authentication
+    ports:
+      - "3306:3306"
+    environment:
+      - MYSQL_ROOT_PASSWORD=focus42sh
+      - MYSQL_DATABASE=authentication_server
+
+
+  focus-auth:
+    image: thefocuscompany/auth_server:latest
+    build:
+      context: .
+    container_name: focus_auth
+    hostname: focus-auth
+    networks:
+      - authentication
+      - docker-nginx
+    ports:
+      - "3000:3000"
+    environment:
+      - VIRTUAL_HOST=auth.etiennepasteur.com
+      - LETSENCRYPT_HOST=auth.etiennepasteur.com
+      - LETSENCRYPT_EMAIL=etienne.pasteur@epitech.eu
+      - VIRTUAL_PORT=3000
+    links:
+      - focus-auth-db
+    depends_on:
+      - focus-auth-db
+
+  migration:
+    image: thefocuscompany/auth_server:latest
+    command: ["./wait-for-it/wait-for-it.sh", "mysql:3306", "--", "npm", "run", "migrate"]
+    networks:
+      - authentication
+    links:
+      - focus-auth-db
+    depends_on:
+      - focus-auth-db

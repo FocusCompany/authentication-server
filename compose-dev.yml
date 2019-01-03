@@ -19,8 +19,6 @@ services:
 
   focus-auth:
     image: thefocuscompany/auth_server:latest
-    build:
-      context: .
     container_name: focus_auth
     hostname: focus-auth
     networks:

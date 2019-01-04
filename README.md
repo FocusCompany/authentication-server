@@ -189,7 +189,7 @@ Expected return :
     "message": "Group deleted"
 }
 ```
-#### <GET> /list_group
+#### GET /list_group
 You have to provide a JWT token inside the `Bearer Token` in the Authorization Header
 Expected return :
 ```

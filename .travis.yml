@@ -1,0 +1,19 @@
+sudo: required
+dist: trusty
+language: minimal
+
+services:
+  - docker
+
+before_deploy:
+  - echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin
+  - docker build -t "$DOCKER_NAME" .
+  - docker images
+  - docker tag "$DOCKER_NAME" $DOCKER_USERNAME/$DOCKER_NAME:latest
+
+deploy:
+  provider: script
+  script:
+    - docker push $DOCKER_USERNAME/$DOCKER_NAME:latest
+  on:
+    branch: master
